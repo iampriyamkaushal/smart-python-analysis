@@ -45,9 +45,9 @@ assert(dirtyQuality.duplicateRowsCount > 0, "Dirty sample detects duplicate rows
 assert(Number(dirtyQuality.completeness) < 100, "Dirty sample completeness is below 100%");
 
 // 5. Test Certificate Registry
-assert(CERTIFICATES_DATABASE.length >= 4, "Certificates database has at least 4 entries");
+assert(CERTIFICATES_DATABASE.length === 1, "Only the available Python course certificate is listed");
 const cert1 = CERTIFICATES_DATABASE.find(c => c.id === "SPA-2026-001");
-assert(cert1 && cert1.status === "VALID", "SPA-2026-001 is VALID");
+assert(cert1 && cert1.status === "VALID" && cert1.course === "Python Programming", "SPA-2026-001 is a valid Python Programming certificate");
 const fakeCert = CERTIFICATES_DATABASE.find(c => c.id === "SPA-999-FAKE");
 assert(!fakeCert, "SPA-999-FAKE does not exist in registry (Invalid rejected)");
 

@@ -3,13 +3,7 @@
 export default function Sidebar({ onLogout }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "🏠", to: "/app/dashboard" },
-    { id: "python", label: "Python Analysis", icon: "🐍", to: "/app/python" },
-    { id: "dataset", label: "Dataset", icon: "📂", to: "/app/dataset" },
-    { id: "cleaning", label: "Data Cleaning", icon: "🧹", to: "/app/cleaning" },
-    { id: "visualization", label: "Visualization", icon: "📊", to: "/app/visualization" },
-    { id: "ml", label: "Machine Learning", icon: "🤖", to: "/app/ml" },
-    { id: "insights", label: "Smart Insights", icon: "✨", to: "/app/insights" },
-    { id: "reports", label: "Reports", icon: "📑", to: "/app/reports" },
+    { id: "python", label: "Python Workspace", icon: "🐍", to: "/app/python" },
     { id: "courses", label: "My Courses", icon: "📚", to: "/app/courses" },
     { id: "progress", label: "My Progress", icon: "📈", to: "/app/progress" },
     { id: "certificates", label: "My Certificates", icon: "🎓", to: "/app/certificates" },
@@ -20,7 +14,7 @@ export default function Sidebar({ onLogout }) {
   return (
     <aside className="dashboard-sidebar">
       <div className="dashboard-brand">
-        <span>SP</span>
+        <img src="/logo.png" alt="" />
         <div>
           <strong>Smart Python</strong>
           <small>Analysis Studio</small>

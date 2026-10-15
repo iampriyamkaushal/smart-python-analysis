@@ -1,12 +1,20 @@
 ﻿import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useAuthChoice } from "../contexts/AuthChoiceContext";
 
-export default function Navbar({ currentUser, onLogout }) {
+export default function Navbar({ currentUser, onLogout, mode = "python" }) {
   const navigate = useNavigate();
+  const openAuthChoice = useAuthChoice();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const internshipMode = mode === "internship";
+  const dashboardPath = internshipMode ? "/dashboard/overview" : "/app/dashboard";
+  const profilePath = internshipMode ? "/dashboard/profile" : "/app/profile";
+  const dashboardLabel = internshipMode ? "My Internship Dashboard" : "My Python Dashboard";
 
   return (
     <header className="navbar">
       <Link to="/" className="logo">
-        <span>SP</span>
+        <img src="/logo.png" alt="" />
         Smart Python Analysis
       </Link>
 
@@ -14,38 +22,53 @@ export default function Navbar({ currentUser, onLogout }) {
         <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
           Home
         </NavLink>
-        <NavLink to="/courses" className={({ isActive }) => (isActive ? "active" : "")}>
-          Course Details
-        </NavLink>
         <NavLink to="/about" className={({ isActive }) => (isActive ? "active" : "")}>
           About
         </NavLink>
         <NavLink to="/contact" className={({ isActive }) => (isActive ? "active" : "")}>
           Contact
         </NavLink>
-        <NavLink to="/verify" className={({ isActive }) => (isActive ? "active" : "")}>
-          Certificate Verification
+        <NavLink to="/internships" className={({ isActive }) => (isActive ? "active" : "")}>
+          Internships
         </NavLink>
       </nav>
 
       <div className="auth-buttons">
         {currentUser ? (
-          <>
-            <button className="btn-primary" onClick={() => navigate("/app/dashboard")}>
-              Go to Workspace →
+          <div className="profile-menu-wrap">
+            <button
+              className="profile-menu-trigger"
+              type="button"
+              aria-expanded={profileMenuOpen}
+              aria-label={`Open ${currentUser.name}'s account menu`}
+              onClick={() => setProfileMenuOpen((isOpen) => !isOpen)}
+            >
+              <span className="profile-avatar">{currentUser.name?.slice(0, 1).toUpperCase() || "S"}</span>
+              <span>{currentUser.name}</span>
+              <span aria-hidden="true">⌄</span>
             </button>
-            <button className="btn-secondary" onClick={onLogout}>
-              Logout
-            </button>
-          </>
+            {profileMenuOpen && (
+              <div className="profile-menu">
+                <button type="button" onClick={() => { setProfileMenuOpen(false); navigate(dashboardPath); }}>
+                  {dashboardLabel}
+                </button>
+                <button type="button" onClick={() => { setProfileMenuOpen(false); navigate(profilePath); }}>
+                  Profile
+                </button>
+                <button type="button" onClick={() => { setProfileMenuOpen(false); onLogout(); }}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <>
-            <Link to="/login" className="btn-secondary" style={{ display: "inline-block", textDecoration: "none" }}>
+            <button type="button" className="btn-secondary" onClick={() => openAuthChoice("login")}>
               Login
-            </Link>
-            <Link to="/register" className="btn-primary" style={{ display: "inline-block", textDecoration: "none" }}>
-              Register
-            </Link>
+            </button>
+            <button type="button" className="btn-primary" onClick={() => openAuthChoice("register")}>
+              Sign Up
+            </button>
           </>
         )}
       </div>

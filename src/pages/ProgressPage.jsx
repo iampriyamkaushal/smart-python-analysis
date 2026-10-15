@@ -4,48 +4,19 @@
       <div className="tool-hero">
         <span>📈</span>
         <div>
-          <p>MILESTONES & LABS</p>
+          <p>PYTHON PROGRAMMING</p>
           <h2>My Progress</h2>
-          <p>Track modules completed, hours logged, and analysis achievements.</p>
+          <p>Your learning progress will appear here as you work through the course.</p>
         </div>
       </div>
 
       <div className="workspace-card">
-        <h2>Overall Course Progress</h2>
-        <div className="progress-bar" style={{ margin: "15px 0" }}>
-          <div className="progress-fill" style={{ width: "68%" }} />
-        </div>
-        <p style={{ color: "#cbd5e1" }}>68% of learning journey completed.</p>
-
-        <div className="stats-grid" style={{ marginTop: "25px" }}>
-          <div className="stat-card">
-            <span>🧪</span>
-            <div>
-              <small>Completed Labs</small>
-              <h3>24 Labs</h3>
-            </div>
-          </div>
-          <div className="stat-card">
-            <span>📂</span>
-            <div>
-              <small>Datasets Analyzed</small>
-              <h3>12 Datasets</h3>
-            </div>
-          </div>
-          <div className="stat-card">
-            <span>🎓</span>
-            <div>
-              <small>Certificates</small>
-              <h3>1 Earned</h3>
-            </div>
-          </div>
-          <div className="stat-card">
-            <span>⏱️</span>
-            <div>
-              <small>Study Hours</small>
-              <h3>48 Hours</h3>
-            </div>
-          </div>
+        <h2>Python Programming</h2>
+        <p style={{ color: "#cbd5e1", margin: "14px 0 20px" }}>
+          Start learning with the available Python course. Progress tracking will be added as course modules become interactive.
+        </p>
+        <div>
+          <button onClick={() => window.location.assign("/courses")}>View Course Modules →</button>
         </div>
       </div>
     </section>

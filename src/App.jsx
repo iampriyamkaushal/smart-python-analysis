@@ -26,6 +26,9 @@ import {
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Sidebar from "./components/Sidebar";
+import ToastViewport from "./components/ToastViewport";
+import AuthPurposeModal from "./components/AuthPurposeModal";
+import { AuthChoiceContext } from "./contexts/AuthChoiceContext";
 
 // Public Pages
 import HomePage from "./pages/HomePage";
@@ -39,52 +42,98 @@ import RegisterPage from "./pages/RegisterPage";
 // Authenticated Pages
 import DashboardPage from "./pages/DashboardPage";
 import PythonWorkspacePage from "./pages/PythonWorkspacePage";
-import DatasetPage from "./pages/DatasetPage";
-import CleaningPage from "./pages/CleaningPage";
-import VisualizationPage from "./pages/VisualizationPage";
-import MachineLearningPage from "./pages/MachineLearningPage";
-import InsightsPage from "./pages/InsightsPage";
-import ReportsPage from "./pages/ReportsPage";
 import CoursesAppPage from "./pages/CoursesAppPage";
 import ProgressPage from "./pages/ProgressPage";
 import CertificatesPage from "./pages/CertificatesPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
+import InternshipsPage from "./pages/InternshipsPage";
+import InternshipDetailPage from "./pages/InternshipDetailPage";
+import InternshipCheckoutPage from "./pages/InternshipCheckoutPage";
+import LegalPage from "./pages/LegalPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import {
+  InternshipDashboardLayout,
+  InternshipOverviewPage,
+  InternshipTasksPage,
+  InternshipResourcesPage,
+  InternshipCertificatePage,
+  InternshipProfilePage
+} from "./pages/InternshipDashboardPage";
 
 // ====================================================
 // ROUTE GUARDS & LAYOUT WRAPPERS
 // ====================================================
 
-function PublicLayout({ currentUser, onLogout }) {
+function PublicLayout({ currentUser, internshipCurrentUser, onLogout, onInternshipLogout }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [authChoice, setAuthChoice] = useState(null);
+  const internshipMode = location.pathname.startsWith("/internships") || location.pathname.startsWith("/checkout/");
+
+  const chooseAuthPurpose = (purpose) => {
+    const actionPath = authChoice === "register" ? "register" : "login";
+    setAuthChoice(null);
+    navigate(purpose === "internship" ? `/internships/${actionPath}` : `/${actionPath}`);
+  };
+
   return (
-    <div className="app">
-      <Navbar currentUser={currentUser} onLogout={onLogout} />
-      <main>
-        <Outlet />
-      </main>
-      <Footer />
-    </div>
+    <AuthChoiceContext.Provider value={setAuthChoice}>
+      <div className="app">
+        <Navbar
+          mode={internshipMode ? "internship" : "python"}
+          currentUser={internshipMode ? internshipCurrentUser : currentUser}
+          onLogout={internshipMode ? onInternshipLogout : onLogout}
+        />
+        <main>
+          <Outlet />
+        </main>
+        <Footer />
+        {authChoice && (
+          <AuthPurposeModal
+            action={authChoice}
+            onClose={() => setAuthChoice(null)}
+            onChoose={chooseAuthPurpose}
+          />
+        )}
+      </div>
+    </AuthChoiceContext.Provider>
   );
 }
 
-function ProtectedRoute({ currentUser, children }) {
+function ProtectedRoute({ currentUser, loginPath = "/login", children }) {
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={loginPath} replace />;
   }
   return children;
+}
+
+function ComingSoonPage({ title }) {
+  return (
+    <section className="tool-page">
+      <div className="tool-hero">
+        <span>🔒</span>
+        <div>
+          <p>COMING SOON</p>
+          <h2>{title}</h2>
+          <p>Python Programming is currently available. More learning tools and technology courses are on the way.</p>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function AppLayout({ currentUser, onLogout }) {
   const location = useLocation();
 
   const getPageTitle = (pathname) => {
-    if (pathname.includes("python")) return "Python Analysis Workspace";
-    if (pathname.includes("dataset")) return "Dataset Management & Profiling";
-    if (pathname.includes("cleaning")) return "Data Cleaning Studio";
-    if (pathname.includes("visualization")) return "Data Visualization Studio";
-    if (pathname.includes("ml")) return "Machine Learning Engine";
-    if (pathname.includes("insights")) return "Automated Smart Insights";
-    if (pathname.includes("reports")) return "Analysis & Audit Reports";
+    if (pathname.includes("python")) return "Python Programming Workspace";
+    if (pathname.includes("dataset")) return "Coming Soon";
+    if (pathname.includes("cleaning")) return "Coming Soon";
+    if (pathname.includes("visualization")) return "Coming Soon";
+    if (pathname.includes("ml")) return "Coming Soon";
+    if (pathname.includes("insights")) return "Coming Soon";
+    if (pathname.includes("reports")) return "Coming Soon";
     if (pathname.includes("courses")) return "Enrolled Course Modules";
     if (pathname.includes("progress")) return "Learning Progress & Milestones";
     if (pathname.includes("certificates")) return "Earned Verified Certificates";
@@ -123,6 +172,10 @@ function AppLayout({ currentUser, onLogout }) {
 // ====================================================
 
 function App() {
+  const notify = (message, type = "success") => window.dispatchEvent(
+    new CustomEvent("spa-toast", { detail: { message, type } })
+  );
+
   // --------------------------------------------------
   // 1. AUTHENTICATION & USER STORE STATE
   // --------------------------------------------------
@@ -145,17 +198,39 @@ function App() {
     localStorage.setItem("spa_users_db", JSON.stringify(usersDb));
   }, [usersDb]);
 
+  const [internshipUsersDb, setInternshipUsersDb] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("spa_internship_users_db") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("spa_internship_users_db", JSON.stringify(internshipUsersDb));
+  }, [internshipUsersDb]);
+
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const token = localStorage.getItem("spa_session_token");
       const user = localStorage.getItem("spa_current_user");
       if (token && user) {
-        return JSON.parse(user);
+        return { ...JSON.parse(user), enrolledTrack: "Python Programming" };
       }
     } catch {
       // ignore
     }
     return null;
+  });
+
+  const [internshipCurrentUser, setInternshipCurrentUser] = useState(() => {
+    try {
+      const token = localStorage.getItem("spa_internship_session_token");
+      const user = localStorage.getItem("spa_internship_current_user");
+      return token && user ? JSON.parse(user) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [authNotice, setAuthNotice] = useState("");
@@ -169,6 +244,7 @@ function App() {
 
     if (!email.trim() || !password) {
       setLoginError("Please enter both email address and password.");
+      notify("Please enter both email address and password.", "error");
       return;
     }
 
@@ -178,20 +254,24 @@ function App() {
 
     if (!found) {
       setLoginError("No account found with this email address. Please register first.");
+      notify("No account found with this email address. Please sign up first.", "error");
       return;
     }
 
     if (found.password !== password) {
       setLoginError("Incorrect password. Please verify your credentials and try again.");
+      notify("Incorrect password. Please try again.", "error");
       return;
     }
 
     // Success
     const token = `spa_token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const activeUser = { ...found, enrolledTrack: "Python Programming" };
     localStorage.setItem("spa_session_token", token);
-    localStorage.setItem("spa_current_user", JSON.stringify(found));
-    setCurrentUser(found);
+    localStorage.setItem("spa_current_user", JSON.stringify(activeUser));
+    setCurrentUser(activeUser);
     setAuthNotice("");
+    notify("Welcome back.");
     navigate("/app/dashboard");
   };
 
@@ -210,27 +290,32 @@ function App() {
 
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       setRegisterError("All fields are required.");
+      notify("Please complete all required fields.", "error");
       return;
     }
 
     if (name.trim().length < 2) {
       setRegisterError("Full name must be at least 2 characters long.");
+      notify("Full name must be at least 2 characters long.", "error");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setRegisterError("Please enter a valid email address.");
+      notify("Please enter a valid email address.", "error");
       return;
     }
 
     if (password.length < 6) {
       setRegisterError("Password must be at least 6 characters long.");
+      notify("Password must be at least 6 characters long.", "error");
       return;
     }
 
     if (password !== confirmPassword) {
       setRegisterError("Passwords do not match. Please re-enter.");
+      notify("Passwords do not match.", "error");
       return;
     }
 
@@ -239,6 +324,7 @@ function App() {
     );
     if (existing) {
       setRegisterError("An account with this email address already exists. Please login instead.");
+      notify("An account with this email already exists. Please log in.", "error");
       return;
     }
 
@@ -248,7 +334,7 @@ function App() {
       email: email.trim().toLowerCase(),
       password: password,
       role: "Active Learner",
-      enrolledTrack: "Python Data Analysis & Machine Learning"
+      enrolledTrack: "Python Programming"
     };
 
     const updatedUsers = [...usersDb, newUser];
@@ -259,7 +345,71 @@ function App() {
     localStorage.setItem("spa_current_user", JSON.stringify(newUser));
     setCurrentUser(newUser);
     setAuthNotice("");
+    notify("Your account is ready.");
     navigate("/app/dashboard");
+  };
+
+  const [internshipLoginForm, setInternshipLoginForm] = useState({ email: "", password: "" });
+  const [internshipLoginError, setInternshipLoginError] = useState("");
+  const [internshipRegisterForm, setInternshipRegisterForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [internshipRegisterError, setInternshipRegisterError] = useState("");
+
+  const handleInternshipLoginSubmit = (event, navigate, nextPath) => {
+    event.preventDefault();
+    setInternshipLoginError("");
+    const { email, password } = internshipLoginForm;
+    const found = internshipUsersDb.find((user) => user.email.toLowerCase() === email.trim().toLowerCase());
+
+    if (!email.trim() || !password || !found || found.password !== password) {
+      const message = !found ? "No internship account found. Please sign up for internships." : "Incorrect email or password.";
+      setInternshipLoginError(message);
+      notify(message, "error");
+      return;
+    }
+
+    const user = { ...found, accountType: "internship" };
+    localStorage.setItem("spa_internship_session_token", `internship_${Date.now()}`);
+    localStorage.setItem("spa_internship_current_user", JSON.stringify(user));
+    setInternshipCurrentUser(user);
+    notify("Internship account signed in.");
+    navigate(nextPath?.startsWith("/checkout/") ? nextPath : "/dashboard/overview");
+  };
+
+  const handleInternshipRegisterSubmit = (event, navigate, nextPath) => {
+    event.preventDefault();
+    setInternshipRegisterError("");
+    const { name, email, password, confirmPassword } = internshipRegisterForm;
+    const emailAddress = email.trim().toLowerCase();
+    const existing = internshipUsersDb.some((user) => user.email.toLowerCase() === emailAddress);
+    let error = "";
+
+    if (!name.trim() || !emailAddress || !password || !confirmPassword) error = "All fields are required.";
+    else if (name.trim().length < 2) error = "Full name must be at least 2 characters long.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) error = "Please enter a valid email address.";
+    else if (password.length < 6) error = "Password must be at least 6 characters long.";
+    else if (password !== confirmPassword) error = "Passwords do not match.";
+    else if (existing) error = "An internship account with this email already exists. Please log in.";
+
+    if (error) {
+      setInternshipRegisterError(error);
+      notify(error, "error");
+      return;
+    }
+
+    const user = {
+      id: `intern-${Date.now()}`,
+      name: name.trim(),
+      email: emailAddress,
+      password,
+      role: "Internship Learner",
+      accountType: "internship"
+    };
+    setInternshipUsersDb((users) => [...users, user]);
+    localStorage.setItem("spa_internship_session_token", `internship_${Date.now()}`);
+    localStorage.setItem("spa_internship_current_user", JSON.stringify(user));
+    setInternshipCurrentUser(user);
+    notify("Your internship account is ready.");
+    navigate(nextPath?.startsWith("/checkout/") ? nextPath : "/dashboard/overview");
   };
 
   const handleLogout = (navigate) => {
@@ -267,7 +417,16 @@ function App() {
     localStorage.removeItem("spa_current_user");
     setCurrentUser(null);
     setAuthNotice("You have logged out successfully.");
+    notify("You have logged out successfully.");
     if (navigate) navigate("/");
+  };
+
+  const handleInternshipLogout = (navigate) => {
+    if (navigate) navigate("/internships");
+    localStorage.removeItem("spa_internship_session_token");
+    localStorage.removeItem("spa_internship_current_user");
+    setInternshipCurrentUser(null);
+    notify("You have logged out of your internship account.");
   };
 
   // --------------------------------------------------
@@ -328,22 +487,9 @@ function App() {
   const [analysisDone, setAnalysisDone] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [pythonCode, setPythonCode] = useState(
-`# Smart Python Analysis Script
-import pandas as pd
-import numpy as np
-
-# 1. Load active dataset
-df = pd.read_csv("sample_data.csv")
-
-# 2. Inspect dataset structure
-print("Dataset Shape:", df.shape)
-
-# 3. Descriptive statistical summary
-print(df.describe())
-
-# 4. Identify performance leaders
-top_record = df.loc[df['Marks'].idxmax()]
-print(f"Top Performer: {top_record['Name']} ({top_record['Marks']} Marks)")`
+`# Try changing the name and greeting.
+name = "Python learner"
+print("Hello,", name)`
   );
 
   const [chartType, setChartType] = useState("bar");
@@ -612,6 +758,8 @@ print(f"Top Performer: {top_record['Name']} ({top_record['Marks']} Marks)")`
     <BrowserRouter>
       <AppRoutes
         currentUser={currentUser}
+        internshipCurrentUser={internshipCurrentUser}
+        notify={notify}
         onLogout={handleLogout}
         selectedCourseTab={selectedCourseTab}
         setSelectedCourseTab={setSelectedCourseTab}
@@ -629,6 +777,15 @@ print(f"Top Performer: {top_record['Name']} ({top_record['Marks']} Marks)")`
         setRegisterForm={setRegisterForm}
         registerError={registerError}
         handleRegisterSubmit={handleRegisterSubmit}
+        internshipLoginForm={internshipLoginForm}
+        setInternshipLoginForm={setInternshipLoginForm}
+        internshipLoginError={internshipLoginError}
+        handleInternshipLoginSubmit={handleInternshipLoginSubmit}
+        internshipRegisterForm={internshipRegisterForm}
+        setInternshipRegisterForm={setInternshipRegisterForm}
+        internshipRegisterError={internshipRegisterError}
+        handleInternshipRegisterSubmit={handleInternshipRegisterSubmit}
+        onInternshipLogout={handleInternshipLogout}
         datasetRows={datasetRows}
         datasetHeaders={datasetHeaders}
         activeQuality={activeQuality}
@@ -663,8 +820,11 @@ print(f"Top Performer: {top_record['Name']} ({top_record['Marks']} Marks)")`
 // Inner routes component with hook access
 function AppRoutes(props) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const nextPath = new URLSearchParams(location.search).get("next");
 
   return (
+    <>
     <Routes>
       {/* ----------------------------------------------------
           PART 1: PUBLIC WEBSITE (DEFAULT FOR ALL VISITORS)
@@ -673,7 +833,9 @@ function AppRoutes(props) {
         element={
           <PublicLayout
             currentUser={props.currentUser}
+            internshipCurrentUser={props.internshipCurrentUser}
             onLogout={() => props.onLogout(navigate)}
+            onInternshipLogout={() => props.onInternshipLogout(navigate)}
           />
         }
       >
@@ -699,6 +861,11 @@ function AppRoutes(props) {
         <Route path="course-details" element={<Navigate to="/courses" replace />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="contact" element={<ContactPage />} />
+        <Route path="internships" element={<InternshipsPage />} />
+        <Route path="internships/:id" element={<InternshipDetailPage />} />
+        <Route path="checkout/:id" element={<InternshipCheckoutPage currentUser={props.internshipCurrentUser} notify={props.notify} />} />
+        <Route path="refund-policy" element={<LegalPage />} />
+        <Route path="terms" element={<LegalPage />} />
         <Route
           path="verify"
           element={
@@ -734,6 +901,55 @@ function AppRoutes(props) {
             />
           }
         />
+        <Route
+          path="internships/login"
+          element={
+            <LoginPage
+              accountType="internship"
+              nextPath={nextPath}
+              loginForm={props.internshipLoginForm}
+              setLoginForm={props.setInternshipLoginForm}
+              loginError={props.internshipLoginError}
+              authNotice=""
+              onSubmit={(event) => props.handleInternshipLoginSubmit(event, navigate, nextPath)}
+            />
+          }
+        />
+        <Route
+          path="internships/register"
+          element={
+            <RegisterPage
+              accountType="internship"
+              nextPath={nextPath}
+              registerForm={props.internshipRegisterForm}
+              setRegisterForm={props.setInternshipRegisterForm}
+              registerError={props.internshipRegisterError}
+              onSubmit={(event) => props.handleInternshipRegisterSubmit(event, navigate, nextPath)}
+            />
+          }
+        />
+      </Route>
+
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute
+            currentUser={props.internshipCurrentUser}
+            loginPath={`/internships/login?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
+          >
+            <InternshipDashboardLayout
+              currentUser={props.internshipCurrentUser}
+              onLogout={() => props.onInternshipLogout(navigate)}
+            />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<InternshipOverviewPage />} />
+        <Route path="tasks" element={<InternshipTasksPage />} />
+        <Route path="resources" element={<InternshipResourcesPage />} />
+        <Route path="certificate" element={<InternshipCertificatePage />} />
+        <Route path="profile" element={<InternshipProfilePage currentUser={props.internshipCurrentUser} />} />
       </Route>
 
       {/* ----------------------------------------------------
@@ -754,98 +970,24 @@ function AppRoutes(props) {
         <Route
           path="dashboard"
           element={
-            <DashboardPage
-              datasetRows={props.datasetRows}
-              datasetHeaders={props.datasetHeaders}
-              activeQuality={props.activeQuality}
-              selectedFile={props.selectedFile}
-              analysisDone={props.analysisDone}
-            />
+            <DashboardPage />
           }
         />
         <Route
           path="python"
           element={
             <PythonWorkspacePage
-              selectedFile={props.selectedFile}
-              datasetRows={props.datasetRows}
-              datasetHeaders={props.datasetHeaders}
               pythonCode={props.pythonCode}
               setPythonCode={props.setPythonCode}
-              analysisDone={props.analysisDone}
-              analysisResult={props.analysisResult}
-              runAnalysis={props.runAnalysis}
             />
           }
         />
-        <Route
-          path="dataset"
-          element={
-            <DatasetPage
-              selectedFile={props.selectedFile}
-              datasetRows={props.datasetRows}
-              datasetHeaders={props.datasetHeaders}
-              activeQuality={props.activeQuality}
-              columnTypes={props.columnTypes}
-              filteredPreviewRows={props.filteredPreviewRows}
-              datasetSearchTerm={props.datasetSearchTerm}
-              setDatasetSearchTerm={props.setDatasetSearchTerm}
-              handleFileUpload={props.handleFileUpload}
-              loadSampleDataset={props.loadSampleDataset}
-              loadDirtyDataset={props.loadDirtyDataset}
-            />
-          }
-        />
-        <Route
-          path="cleaning"
-          element={
-            <CleaningPage
-              datasetRows={props.datasetRows}
-              activeQuality={props.activeQuality}
-              cleaningDone={props.cleaningDone}
-              cleaningMessage={props.cleaningMessage}
-              beforeStats={props.beforeStats}
-              removeDuplicates={props.removeDuplicates}
-              fillMissingValues={props.fillMissingValues}
-              removeRowsWithMissing={props.removeRowsWithMissing}
-              resetToOriginal={props.resetToOriginal}
-            />
-          }
-        />
-        <Route
-          path="visualization"
-          element={
-            <VisualizationPage
-              datasetRows={props.datasetRows}
-              datasetHeaders={props.datasetHeaders}
-              activeMarksColIndex={props.activeMarksColIndex}
-              chartType={props.chartType}
-              setChartType={props.setChartType}
-            />
-          }
-        />
-        <Route path="ml" element={<MachineLearningPage />} />
-        <Route
-          path="insights"
-          element={
-            <InsightsPage
-              analysisResult={props.analysisResult}
-              activeQuality={props.activeQuality}
-            />
-          }
-        />
-        <Route
-          path="reports"
-          element={
-            <ReportsPage
-              selectedFile={props.selectedFile}
-              datasetRows={props.datasetRows}
-              datasetHeaders={props.datasetHeaders}
-              analysisResult={props.analysisResult}
-              activeQuality={props.activeQuality}
-            />
-          }
-        />
+        <Route path="dataset" element={<ComingSoonPage title="Dataset Tools" />} />
+        <Route path="cleaning" element={<ComingSoonPage title="Data Cleaning" />} />
+        <Route path="visualization" element={<ComingSoonPage title="Data Visualization" />} />
+        <Route path="ml" element={<ComingSoonPage title="Machine Learning" />} />
+        <Route path="insights" element={<ComingSoonPage title="Smart Insights" />} />
+        <Route path="reports" element={<ComingSoonPage title="Reports" />} />
         <Route path="courses" element={<CoursesAppPage />} />
         <Route path="progress" element={<ProgressPage />} />
         <Route
@@ -862,8 +1004,10 @@ function AppRoutes(props) {
       </Route>
 
       {/* CATCH-ALL REDIRECT TO HOME */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    <ToastViewport />
+    </>
   );
 }
 

@@ -1,24 +1,26 @@
 ﻿import { Link } from "react-router-dom";
+import { useState } from "react";
 
 export default function LoginPage({
+  accountType = "python",
+  nextPath = "",
   loginForm,
   setLoginForm,
   loginError,
   authNotice,
   onSubmit
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const internshipLogin = accountType === "internship";
+  const nextQuery = nextPath ? `?next=${encodeURIComponent(nextPath)}` : "";
+  const registerPath = internshipLogin ? `/internships/register${nextQuery}` : "/register";
+
   return (
     <section className="page" style={{ minHeight: "65vh" }}>
       <div className="auth-container">
         <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Log in to access your interactive data analytics workspace.</p>
-        </div>
-
-        {/* BACKEND STATUS NOTICE */}
-        <div className="alert-box alert-info" style={{ fontSize: "12px", lineHeight: "1.5" }}>
-          <strong>ℹ️ Authentication Engine:</strong> Currently operating in browser-isolated session mode. 
-          For production multi-user security, a dedicated backend authentication API (<code>POST /api/auth/login</code>) with JWT/OAuth verification is required.
+          <h1>{internshipLogin ? "Internship Login" : "Welcome Back"}</h1>
+          <p>{internshipLogin ? "Log in to access your internship tasks, resources, and certificate." : "Log in to continue learning Python Programming."}</p>
         </div>
 
         {authNotice && <div className="alert-box alert-info">{authNotice}</div>}
@@ -38,15 +40,18 @@ export default function LoginPage({
           </div>
 
           <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Enter password"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-              required
-            />
+            <div className="password-label-row"><label>Password</label><Link to="/contact">Forgot password?</Link></div>
+            <div className="password-input-wrap">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-control"
+                placeholder="Enter password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                required
+              />
+              <button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)}>◉</button>
+            </div>
           </div>
 
           <button
@@ -54,12 +59,12 @@ export default function LoginPage({
             className="btn-primary"
             style={{ width: "100%", padding: "14px", marginTop: "10px" }}
           >
-            Log In to Workspace →
+            {internshipLogin ? "Log In to Internship Dashboard →" : "Log In to Python Workspace →"}
           </button>
         </form>
 
         {/* DEMO CREDENTIALS QUICK FILLER FOR EVALUATION */}
-        <div
+        {!internshipLogin && <div
           style={{
             marginTop: "20px",
             padding: "14px",
@@ -91,15 +96,15 @@ export default function LoginPage({
           >
             ⚡ Fill Sample Credentials
           </button>
-        </div>
+        </div>}
 
         <p style={{ marginTop: "22px", textAlign: "center", color: "#8d98b0", fontSize: "14px" }}>
           Don't have an account yet?{" "}
           <Link
-            to="/register"
+            to={registerPath}
             style={{ color: "#67eadb", fontWeight: "700", textDecoration: "none" }}
           >
-            Register here
+            Sign Up
           </Link>
         </p>
       </div>

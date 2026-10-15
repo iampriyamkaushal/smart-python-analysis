@@ -16,7 +16,7 @@
           <p style={{ color: "#f1f5f9" }}>
             <strong>Full Name:</strong> {currentUser?.name}<br />
             <strong>Email Address:</strong> {currentUser?.email}<br />
-            <strong>Enrolled Track:</strong> {currentUser?.enrolledTrack || "Python Data Analysis & Machine Learning"}<br />
+            <strong>Enrolled Track:</strong> {currentUser?.enrolledTrack || "Python Programming"}<br />
             <strong>Student Status:</strong> <span style={{ color: "#22c55e" }}>Active Verified</span><br />
             <strong>Account ID:</strong> {currentUser?.id || "SPA-USR-8942"}
           </p>
